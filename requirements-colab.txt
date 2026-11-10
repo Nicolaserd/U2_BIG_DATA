@@ -1,0 +1,13 @@
+# Versiones verificadas en el runtime CPU de Google Colab (2026-11-07):
+# Python 3.13.18, OpenJDK 21.0.12, 2 vCPU, 12.67 GB RAM.
+# Todas vienen preinstaladas en Colab; este archivo documenta y fija lo usado.
+pandas==2.2.3
+polars==1.35.2
+pyarrow==23.0.1
+pyspark==4.0.5
+psutil==5.9.5
+numpy==2.4.6
+PyYAML==6.0.3
+openpyxl==3.1.5
+matplotlib==3.10.0
+pytest==8.4.2

@@ -1,0 +1,103 @@
+# Configuración del proyecto U2 — Emergencias 123 Bogotá.
+# Las rutas relativas se resuelven contra la raíz del código (carpeta que contiene config/).
+# El entorno se detecta solo (Colab si existe /content/drive/MyDrive); se puede forzar con U2_ENTORNO.
+
+entornos:
+  colab:                          # flujo principal: todo ocurre en Colab; una sola carpeta en Drive (BigData_U2)
+    base: /content/drive/MyDrive/BigData_U2
+    datos: /content/drive/MyDrive/BigData_U2/datos
+    resultados: /content/drive/MyDrive/BigData_U2/resultados
+    informes: /content/u2_informes   # temporal en el VM: el notebook de informes copia cada archivo a su Actividad_N/
+    datos_alternos:               # si faltan CSV en `datos`: carpeta de Drive de la Unidad 1 (guía U1, paso 2)
+      - /content/drive/MyDrive/BigData_Emergencias_123
+  local:                          # solo para desarrollo y pruebas del código
+    base: .
+    datos: BigData_Emergencias_123
+    resultados: resultados
+    informes: informes
+
+datos:
+  separador: ";"
+  codificacion: utf-8-sig        # los CSV traen BOM UTF-8
+  # Fuente: Secretaría Distrital de Salud (SDS), portal Datos Abiertos Bogotá, licencia CC BY 4.0.
+  # sha256 = huella de los archivos usados (idénticos a los del portal, verificado el 2026-11-10); `url` es el
+  # respaldo de descarga que ya usaba la Unidad 1 cuando Drive no tiene los CSV.
+  conjunto_url: https://datosabiertos.bogota.gov.co/dataset/llamadas-de-urgencias-y-emergencias-que-ingresan-a-traves-de-la-linea-123
+  archivos:                      # periodo = mes que publica cada archivo
+    - nombre: llamadas123_julio_2026.csv
+      periodo: "2026-07"
+      sha256: 21cbe766616d324086a26d91b337cbc3bf89e42585f2ffd0efb218d574b27589
+      url: https://datosabiertos.bogota.gov.co/dataset/b99881e0-8750-4fa8-af6c-3f30c9e38708/resource/e2b98357-3305-4058-a113-982490ab6b7e/download/llamadas123_julio_2026.csv
+    - nombre: llamadaslinea123agosto2026.csv
+      periodo: "2026-08"
+      sha256: c421fe9d75edc4ed6da2afa153fe6c51e6576f371b4d140046aec57b66e5b2e1
+      url: https://datosabiertos.bogota.gov.co/dataset/b99881e0-8750-4fa8-af6c-3f30c9e38708/resource/a79acb9e-57ae-4e6c-bc15-3a8687330b1f/download/llamadaslinea123agosto2026.csv
+    - nombre: llamadaslinea123Septiembre.csv
+      periodo: "2026-09"
+      sha256: face37df8c67912796511f9e6392d2a12dc139c91360eac1dfa46490aedd32d2
+      url: https://datosabiertos.bogota.gov.co/dataset/b99881e0-8750-4fa8-af6c-3f30c9e38708/resource/39f0e478-08f0-405c-b807-8015e07baec1/download/llamadaslinea123.csv
+
+esquema:
+  columnas:
+    - NUMERO_INCIDENTE
+    - FECHA_INICIO_DESPLAZAMIENTO_MOVIL
+    - CODIGO_LOCALIDAD
+    - LOCALIDAD
+    - EDAD
+    - UNIDAD
+    - GENERO
+    - TIPO_INCIDENTE
+    - PRIORIDAD_FINAL
+    - RECEPCION
+  criticas:                      # un nulo aquí => el registro se conserva con observación de calidad
+    - NUMERO_INCIDENTE
+    - FECHA_INICIO_DESPLAZAMIENTO_MOVIL
+    - CODIGO_LOCALIDAD
+    - LOCALIDAD
+    - TIPO_INCIDENTE
+  valores_nulos: ["N/A", ""]     # marcadores de ausencia observados en la inspección
+  localidad_sin_dato: SIN_D
+  formato_fecha: "%Y-%m-%d %H:%M:%S"
+  formato_fecha_spark: "yyyy-MM-dd HH:mm:ss"
+
+catalogos:
+  tipos: config/catalogo_tipos_derivado.csv          # derivado de los datos, NO oficial
+  localidades: config/localidades_bogota.csv         # división político-administrativa de Bogotá
+
+benchmark:
+  herramientas: [pandas, polars, spark]
+  modos: [por_operacion, extremo_a_extremo, extremo_a_extremo_caliente]   # el último es complementario
+  localidades_filtro: [USAQUEN, CHAPINERO]           # valores ya normalizados (sin tildes)
+  calentamientos: 1
+  repeticiones: 5
+  intervalo_muestreo_s: 0.02
+
+poc:
+  ejecuciones: 3
+  tolerancia_dias_fin_mes: 1     # registros del día 1 del mes siguiente siguen en la ventana del archivo
+  edad_min_anios: 0
+  edad_max_anios: 120
+  particionamiento: periodo      # periodo | periodo_localidad
+  factores_edad:                 # conversión de EDAD a años según UNIDAD (normalizada)
+    ANOS: 1.0
+    MESES: 0.0833333333
+    DIAS: 0.0027378508
+    HORAS: 0.0001140771
+
+documentos:                      # datos del bloque de título APA (completar antes de entregar)
+  autor: "[Nombre del estudiante o del equipo]"
+  institucion: "[Nombre de la institución]"
+  curso: "Herramientas de Big Data — Saber 2: Procesamiento distribuido"
+  docente: "[Nombre del docente]"
+  fuente_datos: "Secretaría Distrital de Salud de Bogotá"           # autor (organización publicadora en el portal)
+  titulo_datos: "Llamadas de urgencias y emergencias que ingresan a través de la línea 123"
+  anio_datos: "2026"                                                # recursos jul–sep publicados en 2026
+  editor_datos: "Datos Abiertos Bogotá"
+
+spark:
+  app_name: PoC_Emergencias123_Bogota
+  driver_memory_max_gb: 4        # valor de la guía; se limita al 50 % de la RAM detectada
+  driver_max_result_size: 2g
+  advisory_partition_size: 64MB
+  shuffle_partitions_por_cpu: 2
+  zona_horaria: America/Bogota

@@ -1,0 +1,35 @@
+# Entorno
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Datos crudos y resultados voluminosos (los CSV originales no se versionan)
+BigData_Emergencias_123/
+resultados/parquet/
+*.parquet
+*.zip
+
+# Credenciales y tokens
+*.json.token
+token.json
+credentials*.json
+*.pem
+.env
+
+# Temporales de Office
+~$*
+
+# Notebooks de ejemplo del curso: solo referencia local, nunca se suben a Drive/Colab ni a ENTREGABLES
+Formatos/
+U1_referencia/
+
+# Versiones anteriores (estructura con paquete + 3 notebooks), solo referencia local
+archivo_anterior/
+
+# Datos y salidas generadas (se regeneran en Colab; los CSV no se versionan)
+ENTREGABLES/
+resultados/
+resultados_colab/
+informes/
+*.csv.bak
