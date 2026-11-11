@@ -7,7 +7,7 @@ entornos:
     base: /content/drive/MyDrive/BigData_U2
     datos: /content/drive/MyDrive/BigData_U2/datos
     resultados: /content/drive/MyDrive/BigData_U2/resultados
-    informes: /content/u2_informes   # temporal en el VM: el notebook de informes copia cada archivo a su Actividad_N/
+    informes: /content/u2_informes   # temporal en el VM: reservado; cada notebook escribe directo en Actividad_N/
     datos_alternos:               # si faltan CSV en `datos`: carpeta de Drive de la Unidad 1 (guía U1, paso 2)
       - /content/drive/MyDrive/BigData_Emergencias_123
   local:                          # solo para desarrollo y pruebas del código

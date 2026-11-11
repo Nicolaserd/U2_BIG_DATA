@@ -146,3 +146,38 @@ Leer al retomar. Actualizar al cerrar cada bloque. Formato: estado · hecho · d
 - No se probaron los notebooks en un VM nuevo: se ejecutaron tras reiniciar el kernel, y un VM nuevo exige
   volver a autorizar Drive.
 - Catálogo de tipos oficial: si se consigue, reemplazar `config/catalogo_tipos_derivado.csv` y regenerar.
+
+## Rediseño 2026-11-10 — notebooks guiados por los del curso (carpeta Formatos)
+- Estado: notebooks COMPLETADOS y ejecutados en Colab; informes PENDIENTES (hay que reescribirlos para el formato nuevo).
+- Pedido del usuario: los notebooks siguen los del curso (Formatos/02 SparkSession, 03 sintaxis/optimización,
+  04 formatos/ETL), solo muestran el proceso (todo el código a la vista, sin anexos ni subprocesos) y NO generan
+  Word/Excel. Los informes los prepara el agente aparte desde las mediciones.
+- 4 notebooks (`scripts/construir_notebooks.py`; respaldo del diseño anterior en `archivo_anterior/`):
+  01 benchmark (`measure_performance` = `measure_operation` del curso + pico con psutil), 02 matriz, 03 PoC
+  (`PipelineEmergencias` = `RobustPipeline` en PySpark), 04 métricas (3 ejecuciones vs `pipeline_pandas`) y escalabilidad (x1/x4/x8).
+- Error corregido: Spark no distingue mayúsculas en nombres de columna (`withColumn('edad')` pisaba `EDAD`):
+  columnas nuevas `edad_num`, `cod_localidad`, `genero_norm`.
+- Cifras (Colab, 2026-11-10 16:44, 2 vCPU, 12.67 GB, PySpark 4.0.5): benchmark total Polars 0.13 s, Pandas ~0.44 s,
+  Spark 3.99 s (+10.1 s arranque JVM); resultados idénticos (1 762 filas USAQUÉN+CHAPINERO, 21 tipos); LOC 10/10/10.
+  Matriz: Polars 4.50, Pandas 3.80, PySpark 3.25. PoC: 27 434 leídos, 27 390 aceptados, 44 duplicados exactos,
+  11/11 controles (100 %). Métricas 3 ejecuciones: Spark 62.7 s (90/51/47), Pandas 1.29 s; memoria pico ~23 %.
+  Escalabilidad: Spark 40.5/49.2/59.3 s y Pandas 1.6/3.3/9.3 s para x1/x4/x8 (pico Spark x8: 85.2 %).
+- Mediciones descargadas en `resultados_colab/descarga/resultados/` (CSV/JSON, logs, Parquet).
+- Pendiente: reescribir `src/emergencias123/reportes/` (excel, documentos, sustentacion, graficos, resumen) para los
+  CSV nuevos y generar los entregables con `scripts/preparar_entregables.py`; README/TRAZABILIDAD; ENTREGABLES/.
+
+
+## Mejoras del PoC (2026-11-11)
+- `scripts/construir_notebooks.py` (notebooks 03 y 04 regenerados; los `_output` ya no se borran al regenerar):
+  1. Parquet particionado por mes/localidad: `partitionBy('periodo', 'cod_localidad')` (Spark y Pandas).
+  2. `edad_anios` según UNIDAD (Años/Meses/Dias/Horas); V09 usa `edad_anios`.
+  3. `min_desplazamiento_a_recepcion` con su nombre literal (no es tiempo de respuesta: mediana ~197 min) +
+     observación `recepcion_antes_de_desplazamiento` + control V12 → 12 controles.
+  4. Configuración de Spark de la guía: maxResultSize 2g, skewJoin, advisoryPartitionSize 64MB; driver ≥ 1 GB.
+  - Textos de particionamiento actualizados en reportes/{diagrama,documentos,sustentacion}.py.
+- EJECUTADO en Colab el 2026-11-11:
+  - 03: 0 errores · 12/12 controles · 27 390 aceptados · 58 particiones mes/localidad · PartitionFilters
+    periodo + cod_localidad · PoC 91.32 s.
+  - 04: Spark 51.35/41.92/37.18 s (media 43.48) vs Pandas 1.31/1.36/1.06 s (media 1.24); memoria 26.3 vs 26.0 %;
+    100 % en ambos. Escalabilidad x1/x4/x8: Spark 38.1/55.0/58.8 s, Pandas 1.06/6.66/7.98 s.
+- SIGUIENTE: reescribir reportes/ con las mediciones nuevas y generar entregables con `scripts/preparar_entregables.py`.

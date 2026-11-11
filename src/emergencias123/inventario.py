@@ -91,7 +91,7 @@ def a_markdown(inv, catalogo, entorno_local):
     """Documento docs/inventario_datos.md a partir del inventario medido."""
     a0 = inv['archivos'][0]
     l = ['# Inventario de datos — Emergencias 123 Bogotá (U2)', '',
-         'Generado en Google Colab por el notebook de procesamiento (`emergencias123.inventario`) a partir de los CSV en Drive, sin modificarlos.', '',
+         'Generado en Google Colab por el notebook 01 (benchmark) (`emergencias123.inventario`) a partir de los CSV en Drive, sin modificarlos.', '',
          '## Procedencia', '',
          '- Conjunto «Llamadas de urgencias y emergencias que ingresan a través de la línea 123», publicado por la',
          '  Secretaría Distrital de Salud en el portal Datos Abiertos Bogotá (licencia CC BY 4.0); un archivo por mes.',

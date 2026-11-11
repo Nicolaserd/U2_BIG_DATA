@@ -7,12 +7,15 @@ paths:
   - "docs/**"
 ---
 
-# Regla: informes y entregables (generados en Colab, redacción APA 7)
+# Regla: informes y entregables (preparados por el agente, redacción APA 7)
 
-- Se generan **en Colab** con el notebook `U2_informes_y_entregables` (`reportes.generador.generar_todo`) a partir de
-  `resultados/mediciones/` en Drive. No se editan a mano los xlsx ni los docx generados.
-- Verificación en Colab con LibreOffice instalado en el runtime: xlsx recalculados sin `#DIV/0!`, `#REF!`,
-  `#NAME?` ni `#VALUE!`; arquitectura de 5–8 páginas y escalabilidad de 1 página (docx → PDF → conteo).
+- Los prepara **el agente**, no los notebooks (decisión del usuario, 2026-11-10), con
+  `.venv/Scripts/python.exe scripts/preparar_entregables.py ENTREGABLES`, a partir de `ENTREGABLES/resultados/`
+  (copia descargada de `MyDrive/BigData_U2/resultados/`). Nunca se vuelve a medir. Todas las cifras salen de esas
+  mediciones de Colab. No se editan a mano los xlsx ni los docx generados.
+- Verificación: Excel/Word por COM en local (o LibreOffice si está): xlsx recalculados sin `#DIV/0!`, `#REF!`,
+  `#NAME?` ni `#VALUE!`; arquitectura de 5–8 páginas y escalabilidad de 1 página (docx → PDF → conteo). La matriz del
+  Excel debe coincidir con la calculada en el notebook 02.
 - **Redacción formal y normas APA 7** en los docx:
   - bloque de título (título, autor, institución, curso, docente, fecha; datos en `config.yaml` → `documentos`);
   - encabezados sin numeración (nivel 1 centrado y en negrita, nivel 2 a la izquierda y en negrita);

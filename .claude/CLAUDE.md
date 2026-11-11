@@ -27,13 +27,14 @@ según `Guia de actividades_U2 (6) (1).pdf`. Plan aprobado:
 3. **Evidencia real.** Las cifras del benchmark y del PoC salen de ejecuciones en Colab. Nada
    simulado, local-presentado-como-Colab ni inventado. Si algo no se pudo hacer, se dice qué,
    por qué y cómo resolverlo.
-3b. **Netamente desde Colab, solo notebooks** (pedido del usuario, 2026-11-09 y 2026-11-10). Los programas son
-   dos notebooks (`U2_procesamiento_distribuido` y `U2_informes_y_entregables`) y en Drive hay UNA sola carpeta,
-   `MyDrive/BigData_U2/`, con lo que pide la guía: los 2 notebooks, `datos/`, `Actividad_1/`, `Actividad_2/`,
-   `Sustentacion/` y `resultados/`. Solo se sube lo necesario (los 2 `.ipynb`): el código de apoyo lo escribe el
-   propio notebook en el VM. Los informes se verifican con LibreOffice dentro de Colab. El CLI `colab` es solo el
-   medio del agente para ejecutar; no se presenta como parte del flujo. Los notebooks deben poder presentarse y
-   sustentarse: relato en el orden de la guía y código importante visible.
+3b. **Notebooks = solo el proceso; informes los hace el agente** (pedido del usuario, 2026-11-10). Son 4 notebooks,
+   uno por tarea práctica (`01_T1.1_Benchmark`, `02_T1.2_Matriz_de_decision`, `03_T2.2_PoC_PySpark`,
+   `04_T2.4_Metricas_y_escalabilidad`), al estilo de los ejemplos de U1 (pasos con título, código visible, resultados).
+   Se ejecutan en Colab sobre `MyDrive/BigData_U2/` y solo guardan mediciones, logs y Parquet en `resultados/`.
+   **Ningún notebook genera Word, Excel ni reportes.** Esos los prepara el agente con
+   `scripts/preparar_entregables.py` a partir de `resultados/mediciones/` descargado de Drive (sin volver a medir) y
+   los verifica con Excel/Word (COM) o LibreOffice. El código de apoyo que importan los subprocesos de medición lo
+   escribe cada notebook en el VM (Anexo A, plegado). El CLI `colab` es solo el medio del agente para ejecutar.
 4. **Datos originales de solo lectura** (`BigData_Emergencias_123/`, protegido por hook). Datos,
    Parquet y credenciales fuera de git. Sin commits salvo pedido explícito.
 5. **Catálogo de tipos "derivado, no oficial"** en todo lugar donde aparezca.

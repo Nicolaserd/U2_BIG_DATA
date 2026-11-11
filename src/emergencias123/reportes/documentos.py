@@ -448,7 +448,7 @@ def doc_arquitectura(R, matriz, rutas, config_spark, ruta, datos):
     d.p("La arquitectura se organiza en cuatro capas. En la ingesta, los CSV mensuales residen en Google Drive con su "
         "huella SHA-256 verificada y la máquina virtual de Colab los lee mediante el montaje de Drive. El procesamiento "
         "consiste en un pipeline de PySpark ejecutado en modo local (Apache Software Foundation, 2025). El almacenamiento "
-        "escribe en Drive el detalle en Parquet particionado por periodo, los agregados, las copias duplicadas "
+        "escribe en Drive el detalle en Parquet particionado por mes y localidad, los agregados, las copias duplicadas "
         "eliminadas, las mediciones y los registros de validación. Las salidas comprenden los indicadores, los informes y el consumo analítico de los "
         "Parquet.")
 
@@ -459,7 +459,7 @@ def doc_arquitectura(R, matriz, rutas, config_spark, ruta, datos):
         ['Almacenamiento', 'Google Drive (MyDrive/BigData_U2)', 'Carpeta única: datos/, resultados/ y una carpeta por actividad'],
         ['Cómputo', f"Google Colab, {ent['vcpu']} vCPU, {ent['ram_gb']} GB de RAM", 'Máquina virtual de un solo nodo'],
         ['Motor', f"PySpark {ent['pyspark']} sobre {java_corto(ent['java'])}", 'Driver y ejecutores en una misma JVM (modo local)'],
-        ['Código', 'Dos notebooks de Colab', 'Procesamiento (pipeline, validaciones y mediciones) e informes'],
+        ['Código', 'Cuatro notebooks de Colab', 'Benchmark, matriz, PoC (pipeline y validaciones) y métricas; los informes se elaboran a partir de sus mediciones'],
         ['Configuración', 'config.yaml y catálogos CSV', 'Esquema, periodos, reglas y parámetros de Spark'],
         ['Catálogos', 'Localidades de Bogotá (oficial) y tipos de incidente (derivado, no oficial)',
          'Estandarización y enriquecimiento'],
@@ -483,7 +483,7 @@ def doc_arquitectura(R, matriz, rutas, config_spark, ruta, datos):
          'incidentes con varios despachos se conservan y se informan.'),
         ('Enriquecimiento y agregados: ', 'unión por difusión con el catálogo (23 filas), verificando que no se '
          'multipliquen filas; agregados por periodo, localidad, tipo, prioridad y día.'),
-        ('Escritura y verificación: ', 'Parquet particionado por periodo, relectura con un lector independiente '
+        ('Escritura y verificación: ', 'Parquet particionado por mes y localidad, relectura con un lector independiente '
          '(PyArrow), evaluación de los controles V01–V20 y registro .txt.'),
     ])
 
@@ -500,8 +500,8 @@ def doc_arquitectura(R, matriz, rutas, config_spark, ruta, datos):
          'Se cumple que leídos = conservados + eliminados.'],
         ['Unión por difusión del catálogo', 'Unión con ordenamiento y mezcla', 'El catálogo tiene 23 filas; la difusión '
          'evita el intercambio de datos del lado grande.'],
-        ['Partición por periodo', 'Partición por periodo y localidad', 'Con unas 9 000 filas por mes, la partición '
-         'doble genera archivos diminutos (véase la Tabla 4).'],
+        ['Partición por mes y localidad', 'Partición solo por mes', 'Corresponde a los filtros habituales del centro de '
+         'despacho y a la guía; hoy genera archivos pequeños (véase la Tabla 4), costo que se diluye con el volumen.'],
         ['Formato Parquet', 'CSV', 'Columnar, comprimido y tipado; permite poda de particiones.'],
         ['Validar sobre la relectura del Parquet', 'Validar en memoria', 'Comprueba lo que efectivamente quedó escrito.'],
         ['Memoria del driver: mín(4g, 50 % de la RAM)', '70 % de la RAM disponible (ejemplo del curso)', 'La guía fija '
@@ -540,13 +540,14 @@ def doc_arquitectura(R, matriz, rutas, config_spark, ruta, datos):
                       f(var['parquet_bytes'] / 1024, 0), f(var['parquet_bytes'] / var['parquet_archivos'] / 1024, 0)])
     d.tabla(['Estrategia', 'Archivos Parquet', 'KB totales', 'KB por archivo'], filas, [6, 3.2, 3.2, 3.2],
             titulo='Comparación medida de las estrategias de particionamiento',
-            nota='La variante por periodo y localidad corresponde a una ejecución de referencia y no entra en los promedios.')
-    d.p("El detalle se escribe con repartition(periodo), sortWithinPartitions(localidad_norm, fecha_inicio) y "
-        "partitionBy(periodo): un archivo por mes, ordenado por localidad. Las consultas por mes descartan particiones "
-        "completas y las consultas por localidad aprovechan las estadísticas mínimas y máximas de los grupos de filas. "
-        "La variante por periodo y localidad multiplica los archivos y reduce su tamaño medio, lo que origina el "
-        "problema de los archivos pequeños sin un beneficio real de poda con este volumen. Esa partición se justificaría "
-        "cuando cada combinación de mes y localidad alcance decenas de megabytes.")
+            nota='Comparación de referencia entre la partición solo por mes y la partición por mes y localidad.')
+    d.p("El detalle se escribe con repartition(periodo, cod_localidad) y partitionBy(periodo, cod_localidad), que es "
+        "la estrategia mes/localidad que pide la guía: un archivo por cada combinación de mes y localidad. Las consultas "
+        "que filtran por mes, por localidad o por ambos leen solo las carpetas necesarias (poda de particiones). El "
+        "costo, medido en la tabla anterior, es un número mayor de archivos de menor tamaño; con el volumen actual "
+        "esos archivos son pequeños, por lo que la ganancia de la poda es limitada. La estrategia se mantiene porque "
+        "corresponde a los filtros habituales del centro de despacho y su beneficio crece con el volumen; cuando cada "
+        "combinación de mes y localidad alcance decenas de megabytes, el tamaño de archivo deja de ser un problema.")
 
     optim = R.get('optim')
     if optim:
@@ -554,8 +555,8 @@ def doc_arquitectura(R, matriz, rutas, config_spark, ruta, datos):
         pl = optim['planes']
         si_no = {True: 'sí', False: 'no'}
         d.p("Los planes físicos obtenidos con explain() sobre el Parquet exportado confirman tres optimizaciones: "
-            f"poda de particiones por periodo ({si_no[pl['poda_particiones']]}), predicado empujado al lector Parquet "
-            f"sobre la localidad ({si_no[pl['predicado_empujado']]}) y unión por difusión con el catálogo "
+            f"poda de particiones por mes y localidad ({si_no[pl['poda_particiones']]}), predicado empujado al lector "
+            f"Parquet ({si_no[pl['predicado_empujado']]}) y unión por difusión con el catálogo "
             f"({si_no[pl['broadcast_join']]}). El texto completo de los planes se conserva en "
             "resultados/mediciones/planes_ejecucion.txt.")
         filas = [[x['formato'], f(x['mb'], 3), f(x['tamano_vs_csv'], 2), f(x['lectura_agregacion_s'], 2)]
@@ -610,7 +611,7 @@ def doc_arquitectura(R, matriz, rutas, config_spark, ruta, datos):
         ['Catálogo de códigos no oficial', 'Descripciones incompletas', 'Sustituirlo por el catálogo oficial con el '
          'mismo formato; el control V08 cuenta los códigos no reconocidos.'],
         ['Códigos de localidad inconsistentes', 'Asignación a una localidad equivocada', 'Observación de calidad y control V10.'],
-        ['Archivos pequeños por sobreparticionar', 'Lecturas lentas', 'Partición solo por periodo; revisión con el volumen real.'],
+        ['Archivos pequeños por sobreparticionar', 'Lecturas lentas', 'Un archivo por partición (repartition por las mismas claves); compactar o pasar a solo mes si los archivos siguen siendo diminutos con el volumen real.'],
         ['Límites de Colab (un nodo, sesión de 12 h)', 'Sesiones interrumpidas', 'Resultados persistidos en Drive; '
          'migración a un clúster en la fase 2.'],
         ['Costes fijos de Spark con poco volumen', 'Latencia alta en lotes pequeños', 'Polars o Pandas para lotes '

@@ -189,7 +189,7 @@ def doc_sustentacion(R, matriz, rutas, ruta, datos):
         d.p("Además, se revisó el «plan de ejecución» de PySpark, que es la receta que el motor arma antes de "
             "trabajar. Ese plan confirma que, al pedir un solo mes, PySpark salta los demás meses sin leerlos; que "
             "el filtro por localidad se aplica al leer el archivo, y que el catálogo se envía completo a cada tarea "
-            "para no mover los datos grandes" + ('.' if all(pl.values()) else ' (ver el detalle en el notebook de procesamiento).'))
+            "para no mover los datos grandes" + ('.' if all(pl.values()) else ' (ver el detalle en el notebook 03, PoC en PySpark).'))
         filas = [[x['formato'], f(x['mb'], 2), f(x['lectura_agregacion_s'], 2)] for x in optim['formatos']['formatos']]
         d.tabla(['Formato', 'Tamaño (MB)', 'Tiempo de lectura y conteo (s)'], filas, [5, 5, 6],
                 titulo='El mismo contenido guardado en tres formatos',
@@ -218,11 +218,12 @@ def doc_sustentacion(R, matriz, rutas, ruta, datos):
     # ------------------------------------------------------------------ Colab
     d.h1('Cómo se trabajó: todo desde Google Colab')
     d.vinetas([
-        'El proyecto son solo dos notebooks, que se suben a una única carpeta de Google Drive (BigData_U2).',
-        'El primer notebook consigue los datos por sí mismo: los toma de la carpeta de Drive de la Unidad 1 o, si no '
+        'El procesamiento son cuatro notebooks de Colab, uno por tarea práctica de la guía (benchmark, matriz de decisión, '
+        'prueba de concepto y métricas), guardados en una única carpeta de Google Drive (BigData_U2).',
+        'El primer notebook (benchmark) consigue los datos por sí mismo: los toma de la carpeta de Drive de la Unidad 1 o, si no '
         'están, los descarga del portal de datos abiertos, y comprueba con su «huella digital» que son los correctos.',
-        'Ese mismo notebook hace todo el procesamiento, narrado paso a paso: comparación de herramientas, prueba de '
-        'concepto, revisión de la optimización y pruebas automáticas. El segundo genera los informes y ordena la carpeta.',
+        'Cada notebook muestra su proceso paso a paso, con el código y los resultados a la vista, y guarda sus '
+        'mediciones en Drive. Los informes (Excel y Word) se elaboraron después a partir de esas mediciones, sin volver a medir.',
         f"La máquina de Colab tenía {ent['vcpu']} procesadores y {ent['ram_gb']} GB de memoria, con Python "
         f"{ent['python']}, PySpark {ent['pyspark']} y {java_corto(ent['java'])}.",
         'Todo lo que pide la guía queda en esa única carpeta: los datos, una carpeta por actividad con sus informes, '
@@ -232,8 +233,8 @@ def doc_sustentacion(R, matriz, rutas, ruta, datos):
     # ------------------------------------------------------------------ Entregables
     d.h1('Qué se entrega y para qué sirve cada cosa')
     d.tabla(['Entregable', 'Para qué sirve', 'Actividad'], [
-        ['Notebook de procesamiento', 'Todo el trabajo, narrado y con sus resultados: comparación y prueba de concepto', '1 y 2'],
-        ['Notebook de informes', 'Genera y verifica los informes y ordena la carpeta del proyecto', '1 y 2'],
+        ['Notebooks 01 y 02', 'Comparación de herramientas y matriz de decisión, paso a paso y con sus resultados', '1'],
+        ['Notebooks 03 y 04', 'Prueba de concepto en PySpark y sus métricas, paso a paso y con sus resultados', '2'],
         ['Reporte comparativo (Excel)', 'Mediciones, promedios, gráficos y matriz de decisión con fórmulas', '1'],
         ['Análisis de decisión (Word)', 'Explica qué herramienta conviene y por qué se mantiene PySpark', '1'],
         ['Documento de arquitectura (Word)', 'Describe el plano del sistema y sus decisiones', '2'],
@@ -319,20 +320,21 @@ def guion_sustentacion(R, matriz, ruta, datos):
         'de las tres que escala a varios computadores.', '',
         '## 2. Arquitectura y decisiones (2 min) — mostrar `diagrama_arquitectura.png`', '',
         '- **Cuatro capas:** ingesta (CSV en Drive, SHA-256 verificado) → procesamiento (PySpark en modo local) → '
-        'almacenamiento (Parquet particionado por periodo en Drive) → salidas (indicadores e informes).',
+        'almacenamiento (Parquet particionado por mes y localidad en Drive) → salidas (indicadores e informes).',
         '- **Calidad:** esquema explícito, nulos sin imputar, solo se eliminan las copias duplicadas exactas '
         f"({f(ps['rechazados'], 0)} filas, guardadas aparte); lo demás se conserva con una observación de calidad.",
-        '- **Optimización:** broadcast join del catálogo (23 filas), partición por periodo y Parquet. '
-        + (f"Por periodo salen {int(u['parquet_archivos'])} archivos; por periodo y localidad saldrían "
-           f"{int(var['parquet_archivos'])}, de ~{f(var['parquet_bytes'] / var['parquet_archivos'] / 1024, 0)} KB cada uno "
-           "(problema de archivos pequeños)." if var is not None else ''),
+        '- **Optimización:** broadcast join del catálogo (23 filas), partición por mes y localidad (la que pide la '
+        'guía) y Parquet. '
+        + (f"Solo por mes saldrían {int(u['parquet_archivos'])} archivos; por mes y localidad salen "
+           f"{int(var['parquet_archivos'])}, de ~{f(var['parquet_bytes'] / var['parquet_archivos'] / 1024, 0)} KB cada uno: "
+           "más archivos pequeños hoy, a cambio de leer solo la localidad consultada." if var is not None else ''),
         '- **Matriz (30/25/20/15/10):** ' + ', '.join(f"{NOMBRE[h]} {f(matriz['ponderado'][h], 2)}" for h in orden) +
         '. Gana la más rápida en este volumen, pero se mantiene PySpark por exigencia y escalabilidad.', '',
-        '## 3. Demo del PoC (1,5 min) — notebook con celdas pre-ejecutadas', '',
-        '1. Sección 4.2: las 3 ejecuciones de Spark y de Pandas (tiempos por ejecución).',
-        '2. Sección 4.3: tabla de métricas y promedios.',
-        '3. Sección 4.4: log de validación; mostrar los controles V01–V20.',
-        '4. Sección 4.5: el Parquet releído en Drive (`periodo=2026-07/08/09`).',
+        '## 3. Demo del PoC (1,5 min) — notebook 03 con celdas pre-ejecutadas', '',
+        '1. Sección 3.2: las 3 ejecuciones de Spark y de Pandas (tiempos por ejecución).',
+        '2. Sección 3.3: tabla de métricas y promedios.',
+        '3. Sección 3.4: log de validación; mostrar los controles V01–V20.',
+        '4. Sección 3.5: el Parquet releído en Drive (`periodo=2026-07/08/09`).',
         '',
         '| Métrica (media de 3 ejecuciones) | PySpark | Pandas |', '|---|---:|---:|',
         f"| Tiempo total (s) | {f(ps['tiempo_total_s'], 2)} | {f(pp['tiempo_total_s'], 2)} |",
@@ -357,7 +359,7 @@ def guion_sustentacion(R, matriz, ruta, datos):
         '`duplicados_eliminados/`. Nulos y anomalías se conservan marcados en `observacion_calidad`'
         + (f" ({', '.join(f'{m}: {c}' for m, c in obs.items())})." if obs else '.'),
         '- **¿Cómo sé que las tres herramientas hicieron lo mismo?** Se compararon filas, esquema, conteo por tipo y el '
-        'SHA-256 del contenido canónico (sección 3.4 del notebook).',
+        'SHA-256 del contenido canónico (sección 3.4 del notebook 01).',
         '- **¿Son medidas confiables?** Cada repetición corre en un proceso nuevo; 1 calentamiento descartado y '
         f"{R['bench']['repeticiones']} repeticiones, con el orden de herramientas rotado.",
         '- **¿Es un clúster?** No: Spark corre en modo local dentro de una VM de Colab (2 vCPU). Un clúster '
@@ -366,7 +368,7 @@ def guion_sustentacion(R, matriz, ruta, datos):
         '- **¿Y las proyecciones?** Se basan en datos replicados 4× y 8×, rotulados como sintéticos.', '',
         '## Qué tener a la mano', '',
         '- `Actividad_2/diagrama_arquitectura.png` · `comparativo_poc_vs_pandas.png` · `metricas_poc.xlsx`',
-        '- `U2_procesamiento_distribuido.ipynb` ya ejecutado (secciones 3 y 4)',
+        '- Los notebooks 01 a 04 ya ejecutados (el 01 es el benchmark y el 03, el PoC)',
         '- `Sustentacion/Sustentacion_proyecto_U2.docx` (explicación para no especialistas)', '',
     ]
     ruta = __import__('pathlib').Path(ruta)

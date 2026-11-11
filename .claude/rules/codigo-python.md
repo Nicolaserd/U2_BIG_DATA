@@ -7,9 +7,10 @@ paths:
 
 # Regla: código Python del proyecto (pensado para Google Colab)
 
-- El código se ejecuta en Google Colab, pero **no se sube a Drive**: los dos notebooks lo escriben en el VM
+- El código de medición se ejecuta en Google Colab, pero **no se sube a Drive**: los 4 notebooks lo escriben en el VM
   (`/content/u2lib`, Anexo A) y lo importan desde allí. `src/`, `config/` y `tests/` son la fuente local de ese
-  código. Nada del flujo puede depender de herramientas locales (Windows, Office, `.venv` o el CLI). Lo que falte se
+  código. Los informes (`src/emergencias123/reportes/`) los ejecuta el agente en local con
+  `scripts/preparar_entregables.py`. Nada del procesamiento puede depender de herramientas locales. Lo que falte se
   instala en el runtime de Colab desde un notebook.
 - Paquete `src/emergencias123/`. `scripts/construir_notebooks.py` (herramienta local) incrusta los módulos en los
   notebooks; no hay otros scripts en el flujo.
